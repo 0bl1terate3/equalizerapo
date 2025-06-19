@@ -75,12 +75,17 @@ double GUIHelper::invScaleZoom(double zoom)
 
 bool GUIHelper::isDarkMode()
 {
-	if (currentTheme == Theme::Light) {
-		return false;
-	} else if (currentTheme == Theme::Dark) {
-		return true;
-	} else { // System theme
-		return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+	switch (currentTheme) {
+		case Theme::Light:
+			return false;
+		case Theme::Dark:
+		case Theme::SolarizedDark:
+		case Theme::Dracula:
+		case Theme::Nord:
+			return true;
+		case Theme::System:
+		default: // Fallback for System or any unexpected new values
+			return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
 	}
 }
 

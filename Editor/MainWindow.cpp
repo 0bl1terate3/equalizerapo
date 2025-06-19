@@ -189,6 +189,24 @@ MainWindow::MainWindow(QDir configDir, QWidget* parent)
 		darkThemeAction->setCheckable(true);
 		connect(darkThemeAction, &QAction::triggered, this, &MainWindow::themeSelected);
 		themeActionGroup->addAction(darkThemeAction);
+
+        QAction* solarizedDarkAction = ui->menuTheme->addAction(tr("Solarized Dark"));
+        solarizedDarkAction->setData(static_cast<int>(GUIHelper::Theme::SolarizedDark));
+        solarizedDarkAction->setCheckable(true);
+        connect(solarizedDarkAction, &QAction::triggered, this, &MainWindow::themeSelected);
+        themeActionGroup->addAction(solarizedDarkAction);
+
+        QAction* draculaAction = ui->menuTheme->addAction(tr("Dracula"));
+        draculaAction->setData(static_cast<int>(GUIHelper::Theme::Dracula));
+        draculaAction->setCheckable(true);
+        connect(draculaAction, &QAction::triggered, this, &MainWindow::themeSelected);
+        themeActionGroup->addAction(draculaAction);
+
+        QAction* nordAction = ui->menuTheme->addAction(tr("Nord"));
+        nordAction->setData(static_cast<int>(GUIHelper::Theme::Nord));
+        nordAction->setCheckable(true);
+        connect(nordAction, &QAction::triggered, this, &MainWindow::themeSelected);
+        themeActionGroup->addAction(nordAction);
 	}
 
 	loadPreferences();
@@ -1069,28 +1087,39 @@ void MainWindow::loadPreferences()
 	updateRecentFiles();
 
 	QVariant languageValue = settings.value("language");
-	QLocale::Language language; // Renamed to avoid conflict
+	QLocale::Language language;
 	if (languageValue.isValid())
 		language = QLocale(languageValue.toString()).language();
 	else
 		language = QLocale::AnyLanguage;
-    currentLanguage = language; // Store initial language
+    currentLanguage = language;
 
 	for (QAction* action : ui->menuLanguage->actions())
 		action->setChecked(action->data().toInt() == language);
 
     // Load Theme preference
-    GUIHelper::Theme savedTheme = static_cast<GUIHelper::Theme>(settings.value("theme", static_cast<int>(GUIHelper::Theme::System)).toInt());
-    GUIHelper::setTheme(savedTheme); // Apply theme but UI update might need restart or explicit style refresh
+    GUIHelper::Theme loadedTheme = static_cast<GUIHelper::Theme>(settings.value("theme", static_cast<int>(GUIHelper::Theme::System)).toInt());
+    GUIHelper::setTheme(loadedTheme);
+
     if (ui->menuTheme) {
+        bool foundAction = false;
         for (QAction* action : ui->menuTheme->actions()) {
-            if (static_cast<GUIHelper::Theme>(action->data().toInt()) == savedTheme) {
+            if (action->data().toInt() == static_cast<int>(loadedTheme)) {
                 action->setChecked(true);
+                foundAction = true;
                 break;
             }
         }
+        if (!foundAction && !ui->menuTheme->actions().isEmpty()) {
+            for (QAction* action : ui->menuTheme->actions()) {
+                if (action->data().toInt() == static_cast<int>(GUIHelper::Theme::System)) {
+                    action->setChecked(true);
+                    GUIHelper::setTheme(GUIHelper::Theme::System);
+                    break;
+                }
+            }
+        }
     }
-
 
 	// load window state after initializing channels as it may trigger on_analysisDockWidget_visibilityChanged when analysis panel is detached
 	QVariant stateValue = settings.value("windowState");
@@ -1201,13 +1230,11 @@ void MainWindow::themeSelected(bool checked)
 	GUIHelper::Theme selectedTheme = static_cast<GUIHelper::Theme>(action->data().toInt());
 	GUIHelper::setTheme(selectedTheme);
 
-    // Save the preference
-    savePreferences(); // Call this to save the theme immediately
+    savePreferences();
 
 	QMessageBox::information(this, tr("Theme Changed"), tr("The theme will be fully applied after restarting the application."));
 
-    // Update check states of menu items
-    if (ui->menuTheme) { // Check if menuTheme exists
+    if (ui->menuTheme) {
         for (QAction* themeAction : ui->menuTheme->actions()) {
             if (static_cast<GUIHelper::Theme>(themeAction->data().toInt()) == selectedTheme) {
                 themeAction->setChecked(true);

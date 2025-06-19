@@ -27,7 +27,10 @@ public:
 	enum Theme {
 		System,
 		Light,
-		Dark
+		Dark,
+		SolarizedDark,
+		Dracula,
+		Nord
 	};
 
 	static QSize scale(QSize size);
