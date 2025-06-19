@@ -25,6 +25,9 @@
 #include <QScreen>
 #include <QStyleHints>
 
+// Initialize currentTheme
+GUIHelper::Theme GUIHelper::currentTheme = GUIHelper::Theme::System;
+
 QSize GUIHelper::scale(QSize size)
 {
 	if (qApp->testAttribute(Qt::AA_Use96Dpi))
@@ -72,5 +75,16 @@ double GUIHelper::invScaleZoom(double zoom)
 
 bool GUIHelper::isDarkMode()
 {
-	return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+	if (currentTheme == Theme::Light) {
+		return false;
+	} else if (currentTheme == Theme::Dark) {
+		return true;
+	} else { // System theme
+		return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+	}
+}
+
+void GUIHelper::setTheme(Theme theme)
+{
+	currentTheme = theme;
 }

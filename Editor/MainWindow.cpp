@@ -31,6 +31,7 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QSettings>
+#include <QActionGroup> // Required for QActionGroup
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -45,6 +46,9 @@
 #include "FilterTable.h"
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
+#include "Editor/CustomStyle.h" // Required for CustomStyle
+#include <QApplication> // Required for qApp
+#include <QStyleFactory> // Required for QStyleFactory
 
 using namespace std;
 
@@ -160,6 +164,31 @@ MainWindow::MainWindow(QDir configDir, QWidget* parent)
 		action->setData(language);
 		action->setCheckable(true);
 		connect(action, SIGNAL(triggered(bool)), this, SLOT(languageSelected(bool)));
+	}
+
+	// Theme Selection Menu
+	// Ensure ui->menuTheme exists and is a QMenu*
+	if (ui->menuTheme) {
+		QActionGroup* themeActionGroup = new QActionGroup(this);
+		themeActionGroup->setExclusive(true);
+
+		QAction* systemThemeAction = ui->menuTheme->addAction(tr("System"));
+		systemThemeAction->setData(static_cast<int>(GUIHelper::Theme::System));
+		systemThemeAction->setCheckable(true);
+		connect(systemThemeAction, &QAction::triggered, this, &MainWindow::themeSelected);
+		themeActionGroup->addAction(systemThemeAction);
+
+		QAction* lightThemeAction = ui->menuTheme->addAction(tr("Light"));
+		lightThemeAction->setData(static_cast<int>(GUIHelper::Theme::Light));
+		lightThemeAction->setCheckable(true);
+		connect(lightThemeAction, &QAction::triggered, this, &MainWindow::themeSelected);
+		themeActionGroup->addAction(lightThemeAction);
+
+		QAction* darkThemeAction = ui->menuTheme->addAction(tr("Dark"));
+		darkThemeAction->setData(static_cast<int>(GUIHelper::Theme::Dark));
+		darkThemeAction->setCheckable(true);
+		connect(darkThemeAction, &QAction::triggered, this, &MainWindow::themeSelected);
+		themeActionGroup->addAction(darkThemeAction);
 	}
 
 	loadPreferences();
@@ -808,7 +837,14 @@ void MainWindow::languageSelected(bool selected)
 	}
 	else
 	{
-		action->setChecked(false);
+		// Undo check if user cancels
+        for (QAction* langAction : ui->menuLanguage->actions()) {
+            if (langAction->data().toInt() == currentLanguage) { // Assuming currentLanguage stores the active language
+                langAction->setChecked(true);
+            } else {
+                langAction->setChecked(false);
+            }
+        }
 	}
 }
 
@@ -973,15 +1009,15 @@ void MainWindow::loadPreferences()
 	if (geometryValue.isValid())
 		restoreGeometry(geometryValue.toByteArray());
 	instantModeCheckBox->setChecked(settings.value("instantMode", true).toBool());
-	QString selectedDevice = settings.value("selectedDevice").toString();
-	if (!selectedDevice.isEmpty())
+	QString selectedDeviceName = settings.value("selectedDevice").toString();
+	if (!selectedDeviceName.isEmpty())
 	{
 		for (int i = 0; i < deviceComboBox->count(); i++)
 		{
 			shared_ptr<AbstractAPOInfo> apoInfo = deviceComboBox->itemData(i).value<shared_ptr<AbstractAPOInfo>>();
 			if (apoInfo != NULL)
 			{
-				if (QString::fromStdWString(apoInfo->getDeviceString()).compare(selectedDevice, Qt::CaseInsensitive) == 0)
+				if (QString::fromStdWString(apoInfo->getDeviceString()).compare(selectedDeviceName, Qt::CaseInsensitive) == 0)
 				{
 					deviceComboBox->setCurrentIndex(i);
 					break;
@@ -1033,14 +1069,28 @@ void MainWindow::loadPreferences()
 	updateRecentFiles();
 
 	QVariant languageValue = settings.value("language");
-	QLocale::Language language;
+	QLocale::Language language; // Renamed to avoid conflict
 	if (languageValue.isValid())
 		language = QLocale(languageValue.toString()).language();
 	else
 		language = QLocale::AnyLanguage;
+    currentLanguage = language; // Store initial language
 
 	for (QAction* action : ui->menuLanguage->actions())
 		action->setChecked(action->data().toInt() == language);
+
+    // Load Theme preference
+    GUIHelper::Theme savedTheme = static_cast<GUIHelper::Theme>(settings.value("theme", static_cast<int>(GUIHelper::Theme::System)).toInt());
+    GUIHelper::setTheme(savedTheme); // Apply theme but UI update might need restart or explicit style refresh
+    if (ui->menuTheme) {
+        for (QAction* action : ui->menuTheme->actions()) {
+            if (static_cast<GUIHelper::Theme>(action->data().toInt()) == savedTheme) {
+                action->setChecked(true);
+                break;
+            }
+        }
+    }
+
 
 	// load window state after initializing channels as it may trigger on_analysisDockWidget_visibilityChanged when analysis panel is detached
 	QVariant stateValue = settings.value("windowState");
@@ -1090,6 +1140,9 @@ void MainWindow::savePreferences()
 	settings.setValue("tabIndex", ui->tabWidget->currentIndex());
 	settings.setValue("recentFiles", recentFiles);
 
+    settings.setValue("theme", static_cast<int>(GUIHelper::currentTheme));
+
+
 	settings.sync();
 }
 
@@ -1135,4 +1188,32 @@ template<class T> QList<T> MainWindow::toQList(const std::vector<T>& vector)
 		list.append(t);
 
 	return list;
+}
+
+void MainWindow::themeSelected(bool checked)
+{
+	Q_UNUSED(checked); // The QActionGroup handles exclusivity
+	QAction* action = qobject_cast<QAction*>(sender());
+	if (!action) {
+		return;
+	}
+
+	GUIHelper::Theme selectedTheme = static_cast<GUIHelper::Theme>(action->data().toInt());
+	GUIHelper::setTheme(selectedTheme);
+
+    // Save the preference
+    savePreferences(); // Call this to save the theme immediately
+
+	QMessageBox::information(this, tr("Theme Changed"), tr("The theme will be fully applied after restarting the application."));
+
+    // Update check states of menu items
+    if (ui->menuTheme) { // Check if menuTheme exists
+        for (QAction* themeAction : ui->menuTheme->actions()) {
+            if (static_cast<GUIHelper::Theme>(themeAction->data().toInt()) == selectedTheme) {
+                themeAction->setChecked(true);
+            } else {
+                themeAction->setChecked(false);
+            }
+        }
+    }
 }

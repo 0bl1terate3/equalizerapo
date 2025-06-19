@@ -18,6 +18,8 @@
 */
 #include "CustomStyle.h"
 #include "Editor/helpers/GUIHelper.h"
+#include <QPalette> // Required for QPalette
+#include <QApplication> // Required for qApp
 
 CustomStyle::CustomStyle(QStyle* style)
 	: QProxyStyle(style)
@@ -56,4 +58,34 @@ QIcon CustomStyle::standardIcon(StandardPixmap standardIcon, const QStyleOption 
 	}
 
 	return QProxyStyle::standardIcon(standardIcon, option, widget);
+}
+
+// Add this method to CustomStyle
+QPalette CustomStyle::standardPalette() const
+{
+    QPalette palette = QProxyStyle::standardPalette();
+    if (GUIHelper::isDarkMode()) {
+        // Dark theme colors
+        palette.setColor(QPalette::Window, QColor(53, 53, 53));
+        palette.setColor(QPalette::WindowText, Qt::white);
+        // You can add more color role changes here for a complete dark theme
+        // For example:
+        // palette.setColor(QPalette::Base, QColor(25, 25, 25));
+        // palette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
+        // palette.setColor(QPalette::ToolTipBase, Qt::white);
+        // palette.setColor(QPalette::ToolTipText, Qt::white);
+        // palette.setColor(QPalette::Text, Qt::white);
+        // palette.setColor(QPalette::Button, QColor(53, 53, 53));
+        // palette.setColor(QPalette::ButtonText, Qt::white);
+        // palette.setColor(QPalette::BrightText, Qt::red);
+        // palette.setColor(QPalette::Link, QColor(42, 130, 218));
+        // palette.setColor(QPalette::Highlight, QColor(42, 130, 218));
+        // palette.setColor(QPalette::HighlightedText, Qt::black);
+    } else {
+        // Light theme colors (or default)
+        palette.setColor(QPalette::Window, Qt::white);
+        palette.setColor(QPalette::WindowText, Qt::black);
+        // Define other colors for light theme if necessary
+    }
+    return palette;
 }

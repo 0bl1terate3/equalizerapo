@@ -24,10 +24,18 @@
 class GUIHelper
 {
 public:
+	enum Theme {
+		System,
+		Light,
+		Dark
+	};
+
 	static QSize scale(QSize size);
 	static int scale(double pixel);
 	static double scaleZoom(double zoom);
 	static double invScale(int pixel);
 	static double invScaleZoom(double zoom);
     static bool isDarkMode();
+	static void setTheme(Theme theme);
+	static Theme currentTheme; // Declaration
 };

@@ -20,6 +20,7 @@
 #pragma once
 
 #include <QProxyStyle>
+#include <QPalette> // Required for QPalette
 
 class CustomStyle : public QProxyStyle
 {
@@ -30,4 +31,5 @@ public:
 
 	int pixelMetric(PixelMetric metric, const QStyleOption* option, const QWidget* widget) const override;
 	QIcon standardIcon(StandardPixmap standardIcon, const QStyleOption *option = nullptr, const QWidget *widget = nullptr) const override;
+	QPalette standardPalette() const override; // Declaration
 };

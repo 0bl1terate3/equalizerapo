@@ -90,6 +90,7 @@ private slots:
 	void languageSelected(bool selected);
 	void on_actionResetAllGlobalPreferences_triggered();
 	void on_actionResetAllFileSpecificPreferences_triggered();
+	void themeSelected(bool checked); // New slot
 
 private:
 	FilterTable* addTab(QString title, QString tooltip, QString configPath, QList<QString> lines);
